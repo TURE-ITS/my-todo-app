@@ -97,13 +97,11 @@
 
   <!-- JavaScript Application Logic -->
   <script>
-    // ⚠️ REPLACE LINES BELOW WITH YOUR EXACT SUPABASE CREDENTIALS
+    // 1. REPLACE WITH YOUR EXACT SUPABASE CREDENTIALS
     const SUPABASE_URL = "https://fdizymhojsdsnyikmlir.supabase.co"; 
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkaXp5bWhvanNkc255aWttbGlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2ODA5MTYsImV4cCI6MjEwMjI1NjkxNn0.s7f1m5FKauWVHF7viJyA5YrnfLX42wdzu9mRIi48JxE";
 
-    let supabase = null;
-
-    // Helper: Modal Toggle
+    // Global Modal Helper
     function toggleModal(show) {
       const modal = document.getElementById('modal');
       if (show) {
@@ -113,12 +111,14 @@
       }
     }
 
-    // Initialize Supabase safely
+    let db = null;
+
+    // Initialize Supabase Client
     try {
       if (!SUPABASE_URL.startsWith("http") || SUPABASE_URL.includes("your-project")) {
-        throw new Error("⚠️ Please edit lines 122 & 123 of index.html with your actual Supabase URL & Anon Key!");
+        throw new Error("⚠️ Please edit lines 122 & 123 with your actual Supabase URL & Anon Key!");
       }
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     } catch (err) {
       document.getElementById('task-grid').innerHTML = `
         <div class="col-span-2 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 font-medium">
@@ -131,9 +131,9 @@
 
     // Fetch Tasks
     async function fetchTasks() {
-      if (!supabase) return;
+      if (!db) return;
 
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('todos')
         .select('*')
         .order('id', { ascending: false });
@@ -216,7 +216,7 @@
     // Create Task
     async function createTask(e) {
       e.preventDefault();
-      if (!supabase) return;
+      if (!db) return;
 
       const task_name = document.getElementById('form-task-name').value;
       const task = document.getElementById('form-task-details').value;
@@ -224,7 +224,7 @@
       const category = document.getElementById('form-category').value;
       const due_date = document.getElementById('form-due-date').value || null;
 
-      const { error } = await supabase.from('todos').insert([{
+      const { error } = await db.from('todos').insert([{
         task_name,
         task,
         priority,
@@ -244,16 +244,16 @@
 
     // Toggle Complete
     async function toggleComplete(id, nextState) {
-      if (!supabase) return;
-      await supabase.from('todos').update({ is_completed: nextState }).eq('id', id);
+      if (!db) return;
+      await db.from('todos').update({ is_completed: nextState }).eq('id', id);
       fetchTasks();
     }
 
     // Delete Task
     async function deleteTask(id) {
-      if (!supabase) return;
+      if (!db) return;
       if (confirm('Are you sure you want to delete this task?')) {
-        await supabase.from('todos').delete().eq('id', id);
+        await db.from('todos').delete().eq('id', id);
         fetchTasks();
       }
     }
@@ -272,7 +272,7 @@
     }
 
     // Initialize
-    if (supabase) {
+    if (db) {
       fetchTasks();
     }
   </script>
