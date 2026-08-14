@@ -20,7 +20,7 @@
         <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Tasks Dashboard</h1>
         <p class="text-sm text-gray-500 mt-1">Manage team priorities and track deliverables live.</p>
       </div>
-      <button onclick="toggleModal(true)" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2.5 rounded-lg shadow-sm transition flex items-center gap-2">
+      <button onclick="toggleModal(true)" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2.5 rounded-lg shadow-sm transition flex items-center gap-2 cursor-pointer">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         New Task
       </button>
@@ -37,14 +37,13 @@
 
     <!-- Task Cards Grid -->
     <div id="task-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <!-- Loading Placeholder -->
       <p class="text-gray-400 italic col-span-2">Loading tasks from Supabase...</p>
     </div>
 
   </div>
 
   <!-- Add Task Modal -->
-  <div id="modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+  <div id="modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative">
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-lg font-semibold text-gray-900">Create New Task</h3>
@@ -98,16 +97,42 @@
 
   <!-- JavaScript Application Logic -->
   <script>
-    // 1. Supabase Credentials (REPLACE WITH YOUR ACTUAL KEYS)
-    const SUPABASE_URL = "https://fdizymhojsdsnyikmlir.supabase.co";
+    // ⚠️ REPLACE LINES BELOW WITH YOUR EXACT SUPABASE CREDENTIALS
+    const SUPABASE_URL = "https://fdizymhojsdsnyikmlir.supabase.co"; 
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkaXp5bWhvanNkc255aWttbGlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2ODA5MTYsImV4cCI6MjEwMjI1NjkxNn0.s7f1m5FKauWVHF7viJyA5YrnfLX42wdzu9mRIi48JxE";
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let supabase = null;
+
+    // Helper: Modal Toggle
+    function toggleModal(show) {
+      const modal = document.getElementById('modal');
+      if (show) {
+        modal.classList.remove('hidden');
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    // Initialize Supabase safely
+    try {
+      if (!SUPABASE_URL.startsWith("http") || SUPABASE_URL.includes("your-project")) {
+        throw new Error("⚠️ Please edit lines 122 & 123 of index.html with your actual Supabase URL & Anon Key!");
+      }
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    } catch (err) {
+      document.getElementById('task-grid').innerHTML = `
+        <div class="col-span-2 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 font-medium">
+          ${err.message}
+        </div>`;
+    }
+
     let allTasks = [];
     let currentFilter = 'all';
 
-    // 2. Fetch Tasks from Supabase
+    // Fetch Tasks
     async function fetchTasks() {
+      if (!supabase) return;
+
       const { data, error } = await supabase
         .from('todos')
         .select('*')
@@ -115,7 +140,7 @@
 
       if (error) {
         console.error('Error fetching data:', error);
-        document.getElementById('task-grid').innerHTML = `<p class="text-red-500 col-span-2">Failed to load tasks. Check your Supabase URL & Key.</p>`;
+        document.getElementById('task-grid').innerHTML = `<p class="text-red-500 col-span-2">Failed to load tasks: ${error.message}</p>`;
         return;
       }
 
@@ -123,7 +148,7 @@
       renderTasks();
     }
 
-    // 3. Render Tasks to DOM
+    // Render Tasks
     function renderTasks() {
       const grid = document.getElementById('task-grid');
       grid.innerHTML = '';
@@ -178,7 +203,7 @@
             <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-medium">${t.category || 'Personal'}</span>
             <div class="flex items-center gap-3">
               <span>📅 ${t.due_date || 'No due date'}</span>
-              <button onclick="deleteTask(${t.id})" class="text-gray-400 hover:text-red-600 transition" title="Delete Task">
+              <button onclick="deleteTask(${t.id})" class="text-gray-400 hover:text-red-600 transition cursor-pointer" title="Delete Task">
                 🗑️
               </button>
             </div>
@@ -188,9 +213,11 @@
       });
     }
 
-    // 4. Create Task
+    // Create Task
     async function createTask(e) {
       e.preventDefault();
+      if (!supabase) return;
+
       const task_name = document.getElementById('form-task-name').value;
       const task = document.getElementById('form-task-details').value;
       const priority = document.getElementById('form-priority').value;
@@ -215,25 +242,23 @@
       }
     }
 
-    // 5. Toggle Complete
+    // Toggle Complete
     async function toggleComplete(id, nextState) {
+      if (!supabase) return;
       await supabase.from('todos').update({ is_completed: nextState }).eq('id', id);
       fetchTasks();
     }
 
-    // 6. Delete Task
+    // Delete Task
     async function deleteTask(id) {
+      if (!supabase) return;
       if (confirm('Are you sure you want to delete this task?')) {
         await supabase.from('todos').delete().eq('id', id);
         fetchTasks();
       }
     }
 
-    // Modal & Filter Helpers
-    function toggleModal(show) {
-      document.getElementById('modal').style.display = show ? 'flex' : 'none';
-    }
-
+    // Filter Switcher
     function setFilter(filter) {
       currentFilter = filter;
       document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -247,7 +272,9 @@
     }
 
     // Initialize
-    fetchTasks();
+    if (supabase) {
+      fetchTasks();
+    }
   </script>
 </body>
 </html>
