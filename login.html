@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - SaaS ToDo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+  <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
+    <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">Welcome Back</h2>
+    
+    <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Email</label>
+        <input type="email" id="email" required class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+      </div>
+      
+      <div>
+        <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Password</label>
+        <input type="password" id="password" required class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button type="submit" onclick="authAction='login'" class="w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-lg text-sm">Log In</button>
+        <button type="submit" onclick="authAction='signup'" class="w-1/2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 rounded-lg text-sm">Sign Up</button>
+      </div>
+    </form>
+    <p id="msg" class="text-xs text-center mt-4 hidden"></p>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://fdizymhojsdsnyikmlir.supabase.co"; 
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkaXp5bWhvanNkc255aWttbGlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2ODA5MTYsImV4cCI6MjEwMjI1NjkxNn0.s7f1m5FKauWVHF7viJyA5YrnfLX42wdzu9mRIi48JxE";
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let authAction = 'login';
+
+    async function handleAuth(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const msg = document.getElementById('msg');
+      msg.classList.remove('hidden', 'text-red-500', 'text-green-500');
+
+      let res;
+      if (authAction === 'signup') {
+        res = await db.auth.signUp({ email, password });
+      } else {
+        res = await db.auth.signInWithPassword({ email, password });
+      }
+
+      if (res.error) {
+        msg.textContent = res.error.message;
+        msg.classList.add('text-red-500');
+      } else {
+        msg.textContent = authAction === 'signup' ? "Account created! You can now log in." : "Logged in successfully!";
+        msg.classList.add('text-green-500');
+        if (authAction === 'login') {
+          setTimeout(() => window.location.href = 'index.html', 800);
+        }
+      }
+    }
+  </script>
+</body>
+</html>
