@@ -9,7 +9,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
 
-  <title>ToDo</title>
+  <title>ToDo Workspace</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Supabase JS Client -->
@@ -26,10 +26,15 @@
         <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Tasks Dashboard</h1>
         <p class="text-sm text-gray-500 mt-1">Manage team priorities and track deliverables live.</p>
       </div>
-      <button onclick="toggleModal(true)" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2.5 rounded-lg shadow-sm transition flex items-center gap-2 cursor-pointer">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        New Task
-      </button>
+      <div class="flex items-center gap-3">
+        <button onclick="toggleModal(true)" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2.5 rounded-lg shadow-sm transition flex items-center gap-2 cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          New Task
+        </button>
+        <button onclick="logout()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium px-4 py-2.5 rounded-lg transition text-sm cursor-pointer">
+          Log Out
+        </button>
+      </div>
     </div>
 
     <!-- Category & Status Filter Tabs -->
@@ -103,11 +108,9 @@
 
   <!-- JavaScript Application Logic -->
   <script>
-    // 1. REPLACE WITH YOUR EXACT SUPABASE CREDENTIALS
     const SUPABASE_URL = "https://fdizymhojsdsnyikmlir.supabase.co"; 
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkaXp5bWhvanNkc255aWttbGlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2ODA5MTYsImV4cCI6MjEwMjI1NjkxNn0.s7f1m5FKauWVHF7viJyA5YrnfLX42wdzu9mRIi48JxE";
 
-    // Global Modal Helper
     function toggleModal(show) {
       const modal = document.getElementById('modal');
       if (show) {
@@ -117,19 +120,22 @@
       }
     }
 
-    let db = null;
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Initialize Supabase Client
-    try {
-      if (!SUPABASE_URL.startsWith("http") || SUPABASE_URL.includes("your-project")) {
-        throw new Error("⚠️ Please edit lines 122 & 123 with your actual Supabase URL & Anon Key!");
+    // Auth Guard: Kicks user to login page if unauthenticated
+    async function checkAuth() {
+      const { data: { session } } = await db.auth.getSession();
+      if (!session) {
+        window.location.href = 'login.html';
+      } else {
+        fetchTasks();
       }
-      db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    } catch (err) {
-      document.getElementById('task-grid').innerHTML = `
-        <div class="col-span-2 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 font-medium">
-          ${err.message}
-        </div>`;
+    }
+
+    // Log Out Action
+    async function logout() {
+      await db.auth.signOut();
+      window.location.href = 'login.html';
     }
 
     let allTasks = [];
@@ -219,10 +225,12 @@
       });
     }
 
-    // Create Task
+    // Create Task (Attached to logged-in user)
     async function createTask(e) {
       e.preventDefault();
       if (!db) return;
+
+      const { data: { user } } = await db.auth.getUser();
 
       const task_name = document.getElementById('form-task-name').value;
       const task = document.getElementById('form-task-details').value;
@@ -236,6 +244,7 @@
         priority,
         category,
         due_date,
+        user_id: user.id,
         is_completed: false
       }]);
 
@@ -277,10 +286,8 @@
       renderTasks();
     }
 
-    // Initialize
-    if (db) {
-      fetchTasks();
-    }
+    // Run Auth Guard on load
+    checkAuth();
   </script>
 </body>
 </html>
