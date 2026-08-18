@@ -126,7 +126,7 @@
     async function checkAuth() {
       const { data: { session } } = await db.auth.getSession();
       if (!session) {
-        window.location.href = 'login.html';
+        window.location.href = 'login';
       } else {
         fetchTasks();
       }
@@ -135,7 +135,7 @@
     // Log Out Action
     async function logout() {
       await db.auth.signOut();
-      window.location.href = 'login.html';
+      window.location.href = 'login';
     }
 
     let allTasks = [];
