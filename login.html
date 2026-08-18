@@ -53,7 +53,7 @@
   </div>
 
   <script>
-    // Register Service Worker to force fresh page loads on GitHub Pages
+    // Register Service Worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js');
     }
@@ -63,8 +63,9 @@
 
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let authAction = 'login';
+    let msgTimer = null; // Tracks active message auto-hide timer
 
-    // Auto-redirect clean URL (Method 1)
+    // Auto-redirect clean URL
     async function checkExistingSession() {
       const { data: { session } } = await db.auth.getSession();
       if (session) {
@@ -73,34 +74,46 @@
     }
     checkExistingSession();
 
-    // Toggle Password Visibility Function
+    // Toggle Password Visibility
     function togglePassword() {
       const passInput = document.getElementById('password');
       const eyeIcon = document.getElementById('eye-icon');
 
       if (passInput.type === 'password') {
         passInput.type = 'text';
-        // Crossed Eye Icon (Hide Password)
         eyeIcon.innerHTML = `
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858-5.908a10.038 10.038 0 013.682-.863c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m-4.692-4.692a3 3 0 00-4.243-4.243M3 3l18 18" />
         `;
       } else {
         passInput.type = 'password';
-        // Open Eye Icon (Show Password)
         eyeIcon.innerHTML = `
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
         `;
       }
+    }
+
+    // Displays message banner and auto-hides after 2000ms
+    function showNotification(text, styleClasses) {
+      const msg = document.getElementById('msg');
+      
+      // Clear previous running timer if user clicks quickly
+      if (msgTimer) clearTimeout(msgTimer);
+
+      msg.textContent = text;
+      msg.className = `text-xs text-center mt-4 p-2.5 rounded-lg font-medium ${styleClasses}`;
+      msg.classList.remove('hidden');
+
+      // Auto-hide after 2 seconds
+      msgTimer = setTimeout(() => {
+        msg.classList.add('hidden');
+      }, 2000);
     }
 
     async function handleAuth(e) {
       e.preventDefault();
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
-      const msg = document.getElementById('msg');
-      
-      msg.className = "text-xs text-center mt-4 p-2.5 rounded-lg font-medium";
 
       let res;
       if (authAction === 'signup') {
@@ -110,15 +123,12 @@
       }
 
       if (res.error) {
-        msg.textContent = res.error.message;
-        msg.classList.add('bg-red-50', 'text-red-700', 'border', 'border-red-200');
+        showNotification(res.error.message, 'bg-red-50 text-red-700 border border-red-200');
       } else {
         if (authAction === 'signup') {
-          msg.textContent = "Account created! You can now log in.";
-          msg.classList.add('bg-green-50', 'text-green-700', 'border', 'border-green-200');
+          showNotification('Account created! You can now log in.', 'bg-green-50 text-green-700 border border-green-200');
         } else {
-          msg.textContent = "Success! Redirecting to dashboard...";
-          msg.classList.add('bg-indigo-50', 'text-indigo-700', 'border', 'border-indigo-200');
+          showNotification('Success! Redirecting to dashboard...', 'bg-indigo-50 text-indigo-700 border border-indigo-200');
           setTimeout(() => {
             window.location.href = './';
           }, 800);
