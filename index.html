@@ -108,6 +108,9 @@
 
   <!-- JavaScript Application Logic -->
   <script>
+    if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js');
+}
     const SUPABASE_URL = "https://fdizymhojsdsnyikmlir.supabase.co"; 
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkaXp5bWhvanNkc255aWttbGlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2ODA5MTYsImV4cCI6MjEwMjI1NjkxNn0.s7f1m5FKauWVHF7viJyA5YrnfLX42wdzu9mRIi48JxE";
 
